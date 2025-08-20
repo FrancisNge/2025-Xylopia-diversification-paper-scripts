@@ -1,0 +1,35 @@
+####
+#dendextend for tanglegram Rv3.5*
+
+###from example Annon (2023-04)
+trees<-read.tree("cXylopiatangle.168t.IQTBeast.n.Astral.tree")
+astral<-trees[[1]]
+raxml<-trees[[2]]
+assoc<-read.csv("assoc.test.csv")
+obj<-cophylo(astral,raxml,assoc=assoc,
+             print=TRUE)
+
+plot(obj,link.type="curved",link.lwd=3,link.lty="solid",
+     link.col=make.transparent("blue",0.25),fsize=0.2)
+
+
+##FOR SVG file
+library(ggplot2)
+library(sjPlot)
+library(svglite)
+#install.packages("svglite")
+#install.packages("sjPlot")
+#tiff("test.tanglegram.tiff", units="in", width=15, height=18, res=200)
+pdf(file = "test.tanglegram.pdf", width = 15, height = 18) 
+
+##SVG here try
+#svg(width=13, height=16) #works but text still not scaleble, PDF works (if import directly to inkcsape)
+pdf(file = "ForInkscape.Xylopia.Beast.Astral.tanglegram.pdf", width = 16, height = 25) 
+plot(obj,link.type="curved",link.lwd=3,link.lty="solid",
+     link.col=make.transparent("blue",0.25),fsize=0.8)
+dev.off()
+
+
+dev.off()
+#cophyloplot(nuclear, chl, assoc = assoc, length.line = 4, space = 28, gap = 3)
+ggsave(file="test.svg", plot=image, width=10, height=8)
