@@ -1,0 +1,63 @@
+#BAMM diversification R script
+
+library(BAMMtools)
+library(geiger)
+library(ape)
+
+
+setBAMMpriors(read.tree("Xylopia.177t.sum.tree"))
+
+
+##SUBSAMPLE TXT WORKS IN TEXT WRANGLE (UNIX ENDING LINES) AND NOT IN TEXT EDITOR!! (14 MAY 2020)
+         ##ALSO CAN'T HAVE DOTS (FULLSTOPS) REPLACE IN EXCEL
+
+#start 5 mil MCMC Xylopia.124t 12:28 pm 
+
+edata <- getEventData(tree, eventdata = "Xylopia.124t.nu.event_data.txt", burnin=0.2)
+shift_probs <- summary(edata)
+
+##Error in Xylopia.124t subsp. (edata doesn't like full stops), go to text and replace ' with nothing.
+
+#Rate through time
+plotRateThroughTime(edata, ratetype="speciation")
+plotRateThroughTime(edata, ratetype="extinction")
+
+#export as 4 x5 frmae
+
+plot(tree)
+
+##Refer to Bamm tutorial 2015 Phyloseminar
+plot.bammdata(edata, legend=T, spex='netdiv')
+
+##did the MCMC runs converge?
+mcmcout <- read.csv("Xylopia.124t.nu.mcmc_out.txt")
+
+plot(mcmcout$logLik ~ mcmcout$generation)
+
+#discard the first 10% of samples as burnin:
+burnstart <- floor(0.1 * nrow(mcmcout))
+postburn <- mcmcout[burnstart:nrow(mcmcout), ]
+
+#it is good to check the effective sample sizes of the log-likelihood and the number of shift events present in each sample. 
+#We’ll do this using the coda library for R:
+library(coda)
+effectiveSize(postburn$N_shifts)
+effectiveSize(postburn$logLik)
+#In general, we want these to be at least 200 (and 200 is on the low side, but might be reasonable for very large datasets).
+
+
+
+
+
+plot.bammdata(edata, lwd=1, legend=T)
+axis(1, at=max(branching.times(tree))-0:80, labels=0:80)
+css <- credibleShiftSet(edata, expectedNumberOfShifts=1, threshold=5, set.limit = 0.95)
+css$number.distinct
+summary(css)
+plot.credibleshiftset(css)
+
+#plot best shift configuration (i.e. most frequent shift configuration)
+best <- getBestShiftConfiguration(edata, expectedNumberOfShifts=1, threshold=5)
+plot.bammdata(best, lwd=1.25)
+addBAMMshifts(best, cex=2)
+#
