@@ -1,0 +1,349 @@
+#NEXUS
+[R-package APE, Mon Feb 10 22:35:27 2025]
+
+BEGIN TAXA;
+	DIMENSIONS NTAX = 168;
+	TAXLABELS
+		Xylopia_acutiflora_TC-S2927
+		Xylopia_dinklagei_TC-S2964
+		Xylopia_piratae_TC-S2946
+		Xylopia_mildbraedii_TC-S1998
+		Xylopia_monticola_TC-S3212
+		Xylopia_talbotii_TC-S2948
+		Xylopia_thomsonii_TC-S2005
+		Xylopia_le-testui_TC-S0261
+		Xylopia_paniculata_TC-S2960
+		Xylopia_villosa_TC-S1463
+		Xylopia_calva_TC-S2952
+		Xylopia_elliotii_TC-S2934
+		Xylopia_tanganyikensis_TC-S3193
+		Xylopia_pynaertii_TC-S0786
+		Xylopia_longipetala_TC-S2035
+		Xylopia_buxifolia_TC-S2996
+		Xylopia_lamii_TC-S3018
+		Xylopia_perrieri_TC-S2124
+		Xylopia_lastelliana_TC-S3020
+		Xylopia_sclerophylla_TC-S3030
+		Xylopia_lemurica_TC-S2126
+		Xylopia_cupularis_TC-S2930
+		Xylopia_katangensis_TC-S2939
+		Xylopia_hypolampra_TC-S0155
+		Xylopia_arenaria_TC-S3349
+		Xylopia_collina_TC-S2886
+		Xylopia_bemarivensis_TC-S2993
+		Xylopia_gracilipes_TC-S3346
+		Xylopia_holtzii_TC-S2013
+		Xylopia_nilotica_TC-S5768
+		Xylopia_odoratissima_TC-S2991
+		Xylopia_shirensis_TC-S2917
+		Xylopia_torrei_TC-S3224
+		Xylopia_flamignii_TC-S4954
+		Xylopia_gilbertii_TC-S2893
+		Xylopia_toussaintii_TC-S2921
+		Xylopia_tomentosa_TC-S2920
+		Xylopia_keniensis_TC-S5767
+		Xylopia_wilwerthii_TC-S2925
+		Xylopia_anomala_TC-S2130
+		Xylopia_australis_TC-S6163
+		Xylopia_retusa_TC-S2131
+		Xylopia_capuronii_TC-S2998
+		Xylopia_carinata_TC-S3001
+		Xylopia_galokothamna_TC-S3013
+		Xylopia_lokobensis_TC-S3023
+		Xylopia_fananehanensis_TC-S3011
+		Xylopia_danguyella_TC-S3005
+		Xylopia_ghesquiereana_TC-S3014
+		Xylopia_dielsii_TC-S3008
+		Xylopia_kalabenonensis_TC-S4952
+		Xylopia_longirostra_TC-S3027
+		Xylopia_lukei_TC-S2881
+		Xylopia_tenuipetala_TC-S2884
+		Xylopia_mwasumbii_TC-S4950
+		Xylopia_sahafariensis_TC-S2989
+		Xylopia_sericolampra_TC-S2984
+		Xylopia_chlorosperma_TC-S6719
+		Xylopia_cornuta_TC-S6711
+		Xylopia_makiraensis_TC-S6720
+		Xylopia_sulangwane_TC-S6713
+		Xylopia_vulcanicola_TC-S6714
+		Xylopia_peekelii_TC-S5003
+		Xylopia_brunneola_TC-S6716
+		Xylopia_degeneri_TC-S5006
+		Xylopia_vitiensis_TC-S5012
+		Xylopia_dibaccata_TC-S6164
+		Xylopia_vieillardii_TC-S4955
+		Xylopia_pallescens_TC-S4957
+		Xylopia_pancheri_TC-S4958
+		Xylopia_musella_TC-S6715
+		Xylopia_rogstadii_TC-S6712
+		Xylopia_pachysericea_TC-S4998
+		Xylopia_takeuchii_TC-S6723
+		Xylopia_maccreae_TC-S5008
+		Xylopia_monosperma_TC-S5005
+		Xylopia_caudata_TC-S4974
+		Xylopia_poilanei_TC-S6169
+		Xylopia_subdehiscens_TC-S5775
+		Xylopia_dicarpa_TC-S2085
+		Xylopia_sessiliflora_TC-S5774
+		Xylopia_kuchingensis_TC-S6786
+		Xylopia_malayana_TC-S4899
+		Xylopia_ngii_TC-S6563
+		Xylopia_niyomdhamii_TC-S5013
+		Xylopia_heterotricha_TC-S6567
+		Xylopia_lanceola_TC-S4986
+		Xylopia_magna_TC-S6565
+		Xylopia_championii_TC-S4902
+		Xylopia_dehiscens_TC-S4989
+		Xylopia_densifolia_TC-S4990
+		Xylopia_pacifica_TC-S5015
+		Xylopia_papuana_TC-S4984
+		Xylopia_pierrei_TC-S6560
+		Xylopia_elliptica_TC-S6788
+		Xylopia_microcalyx_TC-S6544
+		Xylopia_patoniae_TC-S5771
+		Xylopia_nigricans_TC-S6561
+		Xylopia_platycarpa_TC-S6546
+		Xylopia_vielana_TC-S2033
+		Xylopia_aethiopica_TC-S0270
+		Xylopia_amplexicaulis_TC-S2990
+		Xylopia_lamarckii_TC-S2957
+		Xylopia_richardii_TC-S2979
+		Xylopia_beananensis_TC-S2955
+		Xylopia_ravelonarivoi_TC-S2125
+		Xylopia_flexuosa_TC-S2958
+		Xylopia_humblotiana_TC-S2128
+		Xylopia_madagascariensis_TC-S2966
+		Xylopia_amazonica_TC-S2665
+		Xylopia_discreta_TC-S2637
+		Xylopia_pittieri_TC-S1083
+		Xylopia_pulcherrima_TC-S2627
+		Xylopia_ligustrifolia_TC-S5094
+		Xylopia_aromatica_TC-S2636
+		Xylopia_cayennensis_TC-S2623
+		Xylopia_frutescens_TC-S2589
+		Xylopia_glomerulosa_TC-S4946
+		Xylopia_polyantha_TC-S3121
+		Xylopia_maasiana_TC-S4942
+		Xylopia_multiflora_TC-S4909
+		Xylopia_nitida_TC-S1778
+		Xylopia_sericophylla_TC-S2588
+		Xylopia_surinamensis_TC-S2618
+		Xylopia_brasiliensis_TC-S6791
+		Xylopia_emarginata_TC-S6554
+		Xylopia_parviflora_TC-S1772
+		Xylopia_spruceana_TC-S6813
+		Xylopia_annoniflora_TC-S3889
+		Xylopia_involucrata_TC-S2606
+		Xylopia_barbata_TC-S4935
+		Xylopia_orinocensis_TC-S5016
+		Xylopia_rigidiflora_TC-S5018
+		Xylopia_benthamii_TC-S2638
+		Xylopia_crinita_TC-S5064
+		Xylopia_excellens_TC-S1782
+		Xylopia_macrantha_TC-S2590
+		Xylopia_xylantha_TC-S6823
+		Xylopia_longicuspis_TC-S6208
+		Xylopia_cuspidata_TC-S6717
+		Xylopia_ulei_TC-S5067
+		Xylopia_longicaudata_TC-S6420
+		Xylopia_uniflora_TC-S6552
+		Xylopia_bocatorena_TC-S2207
+		Xylopia_ekmanii_TC-S6207
+		Xylopia_obtusifolia_TC-S6790
+		Xylopia_roigii_TC-S4996
+		Xylopia_hastarum_TC-S6787
+		Xylopia_muricata_TC-S6789
+		Xylopia_columbiana_TC-S4936
+		Xylopia_trichostemon_TC-S4939
+		Xylopia_atlantica_TC-S4932
+		Xylopia_laevigata_TC-S1833
+		Xylopia_decorticans_TC-S1810
+		Xylopia_lanceolata_TC-S6167
+		Xylopia_ochrantha_TC-S4937
+		Xylopia_peruviana_TC-S1134
+		Xylopia_aurantiiodora_TC-S2876
+		Xylopia_congolensis_TC-S2879
+		Xylopia_quintasii_TC-S0222
+		Xylopia_africana_TC-S0648
+		Xylopia_globosa_TC-S2025
+		Xylopia_staudtii_TC-S0300
+		Xylopia_rubescens_TC-S1366
+		Xylopia_aenea_TC-S6718
+		Xylopia_erythrodactyla_TC-S4904
+		Xylopia_ferruginea_TC-S2065
+		Xylopia_sumatrana_TC-S4971
+	;
+END;
+BEGIN TREES;
+	TRANSLATE
+		1	Xylopia_acutiflora_TC-S2927,
+		2	Xylopia_dinklagei_TC-S2964,
+		3	Xylopia_piratae_TC-S2946,
+		4	Xylopia_mildbraedii_TC-S1998,
+		5	Xylopia_monticola_TC-S3212,
+		6	Xylopia_talbotii_TC-S2948,
+		7	Xylopia_thomsonii_TC-S2005,
+		8	Xylopia_le-testui_TC-S0261,
+		9	Xylopia_paniculata_TC-S2960,
+		10	Xylopia_villosa_TC-S1463,
+		11	Xylopia_calva_TC-S2952,
+		12	Xylopia_elliotii_TC-S2934,
+		13	Xylopia_tanganyikensis_TC-S3193,
+		14	Xylopia_pynaertii_TC-S0786,
+		15	Xylopia_longipetala_TC-S2035,
+		16	Xylopia_buxifolia_TC-S2996,
+		17	Xylopia_lamii_TC-S3018,
+		18	Xylopia_perrieri_TC-S2124,
+		19	Xylopia_lastelliana_TC-S3020,
+		20	Xylopia_sclerophylla_TC-S3030,
+		21	Xylopia_lemurica_TC-S2126,
+		22	Xylopia_cupularis_TC-S2930,
+		23	Xylopia_katangensis_TC-S2939,
+		24	Xylopia_hypolampra_TC-S0155,
+		25	Xylopia_arenaria_TC-S3349,
+		26	Xylopia_collina_TC-S2886,
+		27	Xylopia_bemarivensis_TC-S2993,
+		28	Xylopia_gracilipes_TC-S3346,
+		29	Xylopia_holtzii_TC-S2013,
+		30	Xylopia_nilotica_TC-S5768,
+		31	Xylopia_odoratissima_TC-S2991,
+		32	Xylopia_shirensis_TC-S2917,
+		33	Xylopia_torrei_TC-S3224,
+		34	Xylopia_flamignii_TC-S4954,
+		35	Xylopia_gilbertii_TC-S2893,
+		36	Xylopia_toussaintii_TC-S2921,
+		37	Xylopia_tomentosa_TC-S2920,
+		38	Xylopia_keniensis_TC-S5767,
+		39	Xylopia_wilwerthii_TC-S2925,
+		40	Xylopia_anomala_TC-S2130,
+		41	Xylopia_australis_TC-S6163,
+		42	Xylopia_retusa_TC-S2131,
+		43	Xylopia_capuronii_TC-S2998,
+		44	Xylopia_carinata_TC-S3001,
+		45	Xylopia_galokothamna_TC-S3013,
+		46	Xylopia_lokobensis_TC-S3023,
+		47	Xylopia_fananehanensis_TC-S3011,
+		48	Xylopia_danguyella_TC-S3005,
+		49	Xylopia_ghesquiereana_TC-S3014,
+		50	Xylopia_dielsii_TC-S3008,
+		51	Xylopia_kalabenonensis_TC-S4952,
+		52	Xylopia_longirostra_TC-S3027,
+		53	Xylopia_lukei_TC-S2881,
+		54	Xylopia_tenuipetala_TC-S2884,
+		55	Xylopia_mwasumbii_TC-S4950,
+		56	Xylopia_sahafariensis_TC-S2989,
+		57	Xylopia_sericolampra_TC-S2984,
+		58	Xylopia_chlorosperma_TC-S6719,
+		59	Xylopia_cornuta_TC-S6711,
+		60	Xylopia_makiraensis_TC-S6720,
+		61	Xylopia_sulangwane_TC-S6713,
+		62	Xylopia_vulcanicola_TC-S6714,
+		63	Xylopia_peekelii_TC-S5003,
+		64	Xylopia_brunneola_TC-S6716,
+		65	Xylopia_degeneri_TC-S5006,
+		66	Xylopia_vitiensis_TC-S5012,
+		67	Xylopia_dibaccata_TC-S6164,
+		68	Xylopia_vieillardii_TC-S4955,
+		69	Xylopia_pallescens_TC-S4957,
+		70	Xylopia_pancheri_TC-S4958,
+		71	Xylopia_musella_TC-S6715,
+		72	Xylopia_rogstadii_TC-S6712,
+		73	Xylopia_pachysericea_TC-S4998,
+		74	Xylopia_takeuchii_TC-S6723,
+		75	Xylopia_maccreae_TC-S5008,
+		76	Xylopia_monosperma_TC-S5005,
+		77	Xylopia_caudata_TC-S4974,
+		78	Xylopia_poilanei_TC-S6169,
+		79	Xylopia_subdehiscens_TC-S5775,
+		80	Xylopia_dicarpa_TC-S2085,
+		81	Xylopia_sessiliflora_TC-S5774,
+		82	Xylopia_kuchingensis_TC-S6786,
+		83	Xylopia_malayana_TC-S4899,
+		84	Xylopia_ngii_TC-S6563,
+		85	Xylopia_niyomdhamii_TC-S5013,
+		86	Xylopia_heterotricha_TC-S6567,
+		87	Xylopia_lanceola_TC-S4986,
+		88	Xylopia_magna_TC-S6565,
+		89	Xylopia_championii_TC-S4902,
+		90	Xylopia_dehiscens_TC-S4989,
+		91	Xylopia_densifolia_TC-S4990,
+		92	Xylopia_pacifica_TC-S5015,
+		93	Xylopia_papuana_TC-S4984,
+		94	Xylopia_pierrei_TC-S6560,
+		95	Xylopia_elliptica_TC-S6788,
+		96	Xylopia_microcalyx_TC-S6544,
+		97	Xylopia_patoniae_TC-S5771,
+		98	Xylopia_nigricans_TC-S6561,
+		99	Xylopia_platycarpa_TC-S6546,
+		100	Xylopia_vielana_TC-S2033,
+		101	Xylopia_aethiopica_TC-S0270,
+		102	Xylopia_amplexicaulis_TC-S2990,
+		103	Xylopia_lamarckii_TC-S2957,
+		104	Xylopia_richardii_TC-S2979,
+		105	Xylopia_beananensis_TC-S2955,
+		106	Xylopia_ravelonarivoi_TC-S2125,
+		107	Xylopia_flexuosa_TC-S2958,
+		108	Xylopia_humblotiana_TC-S2128,
+		109	Xylopia_madagascariensis_TC-S2966,
+		110	Xylopia_amazonica_TC-S2665,
+		111	Xylopia_discreta_TC-S2637,
+		112	Xylopia_pittieri_TC-S1083,
+		113	Xylopia_pulcherrima_TC-S2627,
+		114	Xylopia_ligustrifolia_TC-S5094,
+		115	Xylopia_aromatica_TC-S2636,
+		116	Xylopia_cayennensis_TC-S2623,
+		117	Xylopia_frutescens_TC-S2589,
+		118	Xylopia_glomerulosa_TC-S4946,
+		119	Xylopia_polyantha_TC-S3121,
+		120	Xylopia_maasiana_TC-S4942,
+		121	Xylopia_multiflora_TC-S4909,
+		122	Xylopia_nitida_TC-S1778,
+		123	Xylopia_sericophylla_TC-S2588,
+		124	Xylopia_surinamensis_TC-S2618,
+		125	Xylopia_brasiliensis_TC-S6791,
+		126	Xylopia_emarginata_TC-S6554,
+		127	Xylopia_parviflora_TC-S1772,
+		128	Xylopia_spruceana_TC-S6813,
+		129	Xylopia_annoniflora_TC-S3889,
+		130	Xylopia_involucrata_TC-S2606,
+		131	Xylopia_barbata_TC-S4935,
+		132	Xylopia_orinocensis_TC-S5016,
+		133	Xylopia_rigidiflora_TC-S5018,
+		134	Xylopia_benthamii_TC-S2638,
+		135	Xylopia_crinita_TC-S5064,
+		136	Xylopia_excellens_TC-S1782,
+		137	Xylopia_macrantha_TC-S2590,
+		138	Xylopia_xylantha_TC-S6823,
+		139	Xylopia_longicuspis_TC-S6208,
+		140	Xylopia_cuspidata_TC-S6717,
+		141	Xylopia_ulei_TC-S5067,
+		142	Xylopia_longicaudata_TC-S6420,
+		143	Xylopia_uniflora_TC-S6552,
+		144	Xylopia_bocatorena_TC-S2207,
+		145	Xylopia_ekmanii_TC-S6207,
+		146	Xylopia_obtusifolia_TC-S6790,
+		147	Xylopia_roigii_TC-S4996,
+		148	Xylopia_hastarum_TC-S6787,
+		149	Xylopia_muricata_TC-S6789,
+		150	Xylopia_columbiana_TC-S4936,
+		151	Xylopia_trichostemon_TC-S4939,
+		152	Xylopia_atlantica_TC-S4932,
+		153	Xylopia_laevigata_TC-S1833,
+		154	Xylopia_decorticans_TC-S1810,
+		155	Xylopia_lanceolata_TC-S6167,
+		156	Xylopia_ochrantha_TC-S4937,
+		157	Xylopia_peruviana_TC-S1134,
+		158	Xylopia_aurantiiodora_TC-S2876,
+		159	Xylopia_congolensis_TC-S2879,
+		160	Xylopia_quintasii_TC-S0222,
+		161	Xylopia_africana_TC-S0648,
+		162	Xylopia_globosa_TC-S2025,
+		163	Xylopia_staudtii_TC-S0300,
+		164	Xylopia_rubescens_TC-S1366,
+		165	Xylopia_aenea_TC-S6718,
+		166	Xylopia_erythrodactyla_TC-S4904,
+		167	Xylopia_ferruginea_TC-S2065,
+		168	Xylopia_sumatrana_TC-S4971
+	;
+	TREE * UNTITLED = [&R] (((((((((((((1:3.352267507,(2:2.268690888,3:2.268690888):1.083576619):1.201098304,((4:3.536938359,5:3.536938359):0.5502132836,(6:3.14340335,7:3.14340335):0.9437482924):0.4662141687):1.934163806,(8:3.91222167,(9:0.6116216883,10:0.6116216883):3.300599982):2.575307948):1.146536299,(11:6.792145668,(((12:2.978265719,13:2.978265719):2.116993463,14:5.095259182):1.32378263,15:6.419041811):0.373103857):0.8419202489):1.699402419,((((((16:2.849413889,17:2.849413889):1.318828072,18:4.168241962):0.5493776936,(19:2.572088589,20:2.572088589):2.145531066):0.7655853767,21:5.483205032):2.27920582,(22:7.442977796,23:7.442977796):0.3194330563):0.6542433792,24:8.416654232):0.9168141046):0.686942341,((((25:4.42924032,26:4.42924032):0.926659955,27:5.355900275):2.413168604,(((28:3.636648027,(29:2.14341841,30:2.14341841):1.493229616):0.3984642048,(31:1.945003641,32:1.945003641):2.09010859):0.9397770276,33:4.974889259):2.79417962):0.7184760702,(((34:6.403609415,((35:3.260344906,36:3.260344906):1.390700714,37:4.65104562):1.752563795):0.7148418653,38:7.118451281):0.7269687841,39:7.845420065):0.6421248845):1.532865728):2.391817562,((40:6.31134125,((41:5.338129153,42:5.338129153):0.7285286015,(((((43:3.425298746,(44:2.292753131,(45:1.165333084,46:1.165333084):1.127420047):1.132545614):0.179836352,47:3.605135098):0.6620199485,(48:3.727526969,49:3.727526969):0.5396280772):0.4523427922,50:4.719497838):0.6897932032,51:5.409291042):0.6573667133):0.2446834956):0.1658080886,52:6.477149339):5.9350789):3.009762549,(((53:3.458374992,54:3.458374992):1.139767061,55:4.598142052):4.001262341,(56:5.541758234,57:5.541758234):3.057646159):6.822586394):1.638703313,((((58:8.791186308,(59:8.179647144,((60:6.27856366,(61:4.47948117,62:4.47948117):1.79908249):0.9213594636,63:7.199923123):0.9797240203):0.6115391641):1.189201519,(64:8.37627505,(65:2.788647515,66:2.788647515):5.587627535):1.604112777):1.784196824,(((((67:3.509463267,68:3.509463267):1.507945278,69:5.017408545):0.2214437801,70:5.238852325):2.61393933,((71:3.343062698,72:3.343062698):2.613624616,(73:4.840620691,74:4.840620691):1.116066623):1.896104341):0.2109806024,(75:7.639057643,76:7.639057643):0.4247146144):3.700812393):1.369604916,(((77:8.314470349,(78:7.62725845,79:7.62725845):0.6872118993):0.7093607215,((((((80:3.072116147,81:3.072116147):1.243534797,82:4.315650945):1.369269173,83:5.684920118):1.317436267,(84:5.053545558,85:5.053545558):1.948810828):1.167938124,86:8.170294509):0.5339439855,(87:4.94408578,88:4.94408578):3.760152715):0.3195925761):3.300134673,((89:11.30527246,(((((90:5.162554303,91:5.162554303):2.395706707,(92:6.315179109,93:6.315179109):1.243081901):1.077158572,94:8.635419582):0.7618692663,95:9.397288848):0.5323393429,((96:7.779007704,97:7.779007704):1.444914059,98:9.223921763):0.705706428):1.37564427):0.5492479214,(99:5.523527227,100:5.523527227):6.330993156):0.4694453608):0.8102238232):3.926504533):5.931386417,((101:8.432427207,(((((102:1.063227776,103:1.063227776):1.501344544,104:2.564572319):0.7282944758,(105:2.880505226,106:2.880505226):0.4123615687):2.302927942,107:5.595794737):0.09902315283,(108:4.825385149,109:4.825385149):0.8694327408):2.737609317):6.100511846,(((((((((110:4.530065341,111:4.530065341):1.985828227,((112:1.778812314,113:1.778812314):3.276171663,114:5.054983978):1.460909591):0.4640652736,(((115:2.241920693,116:2.241920693):3.486852705,(117:3.621152434,(118:3.242364337,119:3.242364337):0.3787880971):2.107620964):0.5737636124,((120:4.651978561,121:4.651978561):0.9374713085,((122:3.310083993,123:3.310083993):0.7115926019,124:4.021676595):1.567773274):0.7130871411):0.677421832):0.5633490974,125:7.54330794):1.01892839,(126:3.2754092,(127:2.13849016,128:2.13849016):1.13691904):5.286827129):0.7982708755,((129:7.425978615,130:7.425978615):0.4237036526,((((131:4.068200166,132:4.068200166):0.6356571704,133:4.703857337):2.061140154,134:6.764997491):0.8628367104,((((135:3.7086713,136:3.7086713):2.325998596,(137:5.702058583,138:5.702058583):0.3326113131):0.3561200605,(139:3.569219726,140:3.569219726):2.821570231):0.5895255991,141:6.980315555):0.6475186457):0.2218480667):1.510824937):0.788968044,(142:4.836531364,143:4.836531364):5.312943884):1.0316447,((144:7.409244693,(((145:2.13730701,146:2.13730701):1.715602781,147:3.852909791):1.317182702,(148:2.348486824,149:2.348486824):2.82160567):2.2391522):0.7766757747,(150:7.459118022,151:7.459118022):0.7268024458):2.995199481):0.2274515692,(((152:4.379166736,153:4.379166736):1.346512342,((154:4.736164263,155:4.736164263):0.945757156,156:5.681921419):0.04375765858):1.181266342,157:6.90694542):4.501626099):3.124367535):8.459141465):3.326062753,(158:8.456743777,(159:5.305256441,160:5.305256441):3.151487337):17.86139949):3.26431013,((161:3.68770847,(162:2.664267944,163:2.664267944):1.023440527):6.852485459,164:10.54019393):19.04225947):2.189744053,(165:20.78794012,((166:9.075339647,167:9.075339647):5.508798577,168:14.58413822):6.203801892):10.98425734);
+END;
