@@ -1,0 +1,792 @@
+library(picante)
+library(pspline)
+library(qpcR)
+library(TreePar)
+library(RPANDA)
+library(dplyr)
+
+
+# If the tree files are in the current working directory, just list them without specifying a path
+tre_files <- list.files(pattern = "\\.tre$")
+
+# # Define the function you want to apply to each .tre file
+
+#Enviromental data
+#opening files
+env_data_GATdata <- read.table("./Environmental data/Temperature.txt", h=T)
+env_data_globalnoK <- read.table("./Environmental data/notkrigedLi_simuls_globalTemperatures_paper1.txt", h=T)
+env_data_globalK <- read.table("./Environmental data/krigedLi_simuls_globalTemperatures_paper1.txt", h=T)
+env_data_REGION80 <- read.table("./Environmental data/krigedLi_simuls_regionalTemperaturesdf80_paper1.txt", h=T)#, sep = ',')
+env_data_REGION20 <- read.table("./Environmental data/krigedLi_simuls_regionamTemperaturesdf20_paper1.txt", h=T)#, sep = ',')
+
+#Creating Global envdatas
+env_data_GATdat80 <- data.frame(Time=env_data_globalK$Time, GATdat80=env_data_globalK$GATdat80.y)
+
+#Creating Regionals envdatas df80
+#South America
+env_data_SAMMAT  <- data.frame(Time=env_data_REGION80$Time, SAMMAT=env_data_REGION80$SAMMAT)
+
+#Africa
+env_data_AFRMAT  <- data.frame(Time=env_data_REGION80$Time, AFRMAT=env_data_REGION80$AFRMAT)
+
+#EurAsia
+env_data_EURAMAT  <- data.frame(Time=env_data_REGION80$Time, EURAMAT=env_data_REGION80$EURAMAT)
+
+#NorthAmerica
+env_data_NAMMAT  <- data.frame(Time=env_data_REGION80$Time, NAMMAT=env_data_REGION80$NAMMAT)
+
+
+process_tree_file <- function(tre_file) {
+  # Load the tree
+  phylo <- read.tree(tre_file)
+  tre_file_base <- basename(tre_file)
+  tre_file_base <- sub("\\.tre$", "", tre_file_base)
+    missing_lineages <- 0
+
+  # Example process: print the number of tips in the tree
+  cat("Processing file:", tre_file, "\n")
+  # phylo <- list(tree)
+  final<-list(); all_res<-list()
+
+  ##
+  ## Fit the models
+  ##
+  # i<-1
+  # if you have posterior trees, the length is >1
+  for (i in 1:length(phylo)){
+    tree <- phylo[[i]]
+    branch.times <- getx(tree)
+    total.time <- max(node.age(tree)$ages)
+    total.diversity <- Ntip(tree)+missing_lineages
+    sampling.fraction <- Ntip(tree)/((Ntip(tree))+missing_lineages)
+
+    cat(i, "tree out of ",length(phylo),": This clade originated", round(total.time,2), "Myrs ago", "and includes", total.diversity, "extant species", "\n")
+
+    ##
+    ## Null models (for model testing purpose)
+    ##
+    cat("Constant-rate diversification models", "\n")
+
+    # BCST (pure birth)
+    cat("BCST: pure birth model", "\n")
+    f.lamb<-function(x,y){y[1]} # x=time, y=parameter of interest, here y=constant across time
+    f.mu<-function(x,y){0} # fixed to 0, no extinction
+    lamb_par<-c(0.1) # initial param
+    mu_par<-c() # initial param
+    cst.lamb=T; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+
+    # the actual model
+    model_BCST<-fit_bd(tree,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,
+                       cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,
+                       fix.mu=fix.mu,cond="crown")
+    # cond="crown" forcing of survival of the crown
+    print(model_BCST)
+
+    # BCST DCST (constant birth-death)
+    cat("BCST DCST: constant birth-death", "\n")
+    f.lamb<-function(x,y){y[1]}
+    f.mu<-function(x,y){y[1]}
+    lamb_par<-c(model_BCST$lamb_par[1])
+    mu_par<-c(0.01)
+    cst.lamb=T; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+
+    model_BCSTDCST<-fit_bd(tree,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDCST)
+
+
+    ##
+    ## Time Dependence
+    ##
+    cat("Time-dependent diversification models", "\n")
+
+    # BTimeVar EXPO
+    cat("BTimeVar EXPO: speciation varies exponentially through time without extinction", "\n")
+    f.lamb<-function(x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(x,y){0}
+    lamb_par<-c(model_BCST$lamb_par[1], 0.01) # the second value is starting value for \alpha, depending on direction, this might want ot be pos or neg, and fail accordingly...
+    mu_par<-c()
+    cst.lamb=F; cst.mu=T; expo.lamb=T; expo.mu=F; fix.mu=T
+
+    model_BTimeVar_EXPO<-fit_bd(tree,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BTimeVar_EXPO)
+
+    # BTimeVar DCST EXPO
+    cat("BTimeVar DCST EXPO: speciation varies exponentially through time with constant extinction", "\n")
+    f.lamb<-function(x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(x,y){y[1]}
+    lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1],model_BTimeVar_EXPO$lamb_par[2])
+    mu_par<-c(0.01)
+    cst.lamb=F; cst.mu=T; expo.lamb=T; expo.mu=F; fix.mu=F
+
+    model_BTimeVarDCST_EXPO<-fit_bd(tree,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BTimeVarDCST_EXPO)
+
+    # BCST DTimeVar EXPO
+    cat("BCST DTimeVar EXPO: constant speciation and extinction varies exponentially through time", "\n")
+    f.lamb<-function(x,y){y[1]}
+    f.mu<-function(x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    mu_par<-c(0.01,0.001)
+    cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=T; fix.mu=F
+
+    model_BCSTDTimeVar_EXPO<-fit_bd(tree,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDTimeVar_EXPO)
+
+    # BTimeVar DTimeVar EXPO
+    cat("BTimeVar DTimeVar EXPO: both speciation and extinction vary exponentially through time", "\n")
+    f.lamb<-function(x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BTimeVarDCST_EXPO$lamb_par[1],0.01)
+    mu_par<-c(0.01,0.001)
+    cst.lamb=F; cst.mu=F; expo.lamb=T; expo.mu=T; fix.mu=F
+
+    model_BTimeVarDTimeVar_EXPO<-fit_bd(tree,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BTimeVarDTimeVar_EXPO)
+
+    ## Temperature Dependence
+    #
+    cat("Temperature-dependent diversification models", "\n")
+    # env_data <- read.table("./Environmental data/Temperature.txt", h=T)
+    # df <- smooth.spline(x= env_data[,1], env_data[,2])$df; print(df)
+    # GLOBAL TEMP
+    # function of x=time, y=parameter, t=temp
+    # the function only needs to be specified, after that the model fit functions take care of optimisation...
+    # # BGTempVar EXPO
+    # cat("BGTempVar EXPO: speciation varies exponentially with global temperature without extinction", "\n")
+    # f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    # f.mu<-function(t,x,y){0}
+    # lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1], 0)
+    # mu_par<-c()
+    # cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+    # 
+    # # here new model, fit_env , two more params for the function, the dataframe and the spline degree of freedom
+    # model_BGTempVar_EXPO<-fit_env(tree,env_data_GATdat80, df=80, total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    # print(model_BGTempVar_EXPO)
+    # 
+    # # # BGTempVar DCST EXPO
+    # cat("BGTempVar DCST EXPO: speciation varies exponentially with global temperature and extinction is constant", "\n")
+    # f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    # f.mu<-function(t,x,y){y[1]}
+    # lamb_par<-c(abs(model_BGTempVar_EXPO$lamb_par[1]),model_BGTempVar_EXPO$lamb_par[2])
+    # mu_par<-c(0.01)
+    # cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+    # 
+    # model_BGTempVarDCST_EXPO<-fit_env(tree,env_data_GATdat80, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    # print(model_BGTempVarDCST_EXPO)
+    # 
+    # # # BCST DGTempVar EXPO
+    # cat("BCST DGTempVar EXPO: constant speciation and extinction varies exponentially with global temperature", "\n")
+    # f.lamb<-function(t,x,y){y[1]}
+    # f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    # lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    # mu_par<-c(0.01,0)
+    # cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+    # 
+    # model_BCSTDGTempVar_EXPO<-fit_env(tree,env_data_GATdat80, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    # print(model_BCSTDGTempVar_EXPO)
+    # 
+    # # BGTempVar DGTempVar EXPO
+    # cat("BGTempVar DGTempVar EXPO: both speciation and extinction vary exponentially with global temperature", "\n")
+    # f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    # f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    # lamb_par<-c(abs(model_BGTempVarDCST_EXPO$lamb_par[1]),model_BGTempVarDCST_EXPO$lamb_par[2])
+    # mu_par<-c(0.01,0)
+    # cst.lamb=F; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+    # 
+    # model_BGTempVarDGTempVar_EXPO<-fit_env(tree,env_data_GATdat80, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    # print(model_BGTempVarDGTempVar_EXPO)
+
+    #REGIONAL TEMPERATURE
+    #SAM
+    # BSAMTempVar EXPO
+    cat("BSAMTempVar EXPO: speciation varies exponentially with SAM temperature without extinction", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){0}
+    lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1], 0)
+    mu_par<-c()
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+    
+    # here new model, fit_env , two more params for the function, the dataframe and the spline degree of freedom
+    model_BSAMTempVar_EXPO<-fit_env(tree,env_data_SAMMAT , df=80, total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BSAMTempVar_EXPO)
+    
+    # # BSAMTempVar DCST EXPO
+    cat("BSAMTempVar DCST EXPO: speciation varies exponentially with SAM temperature and extinction is constant", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]}
+    lamb_par<-c(abs(model_BSAMTempVar_EXPO$lamb_par[1]),model_BSAMTempVar_EXPO$lamb_par[2])
+    mu_par<-c(0.01)
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+    
+    model_BSAMTempVarDCST_EXPO<-fit_env(tree,env_data_SAMMAT , df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BSAMTempVarDCST_EXPO)
+    
+    # # BCST DSAMTempVar EXPO
+    cat("BCST DSAMTempVar EXPO: constant speciation and extinction varies exponentially with SAM temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    mu_par<-c(0.01,0)
+    cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+    
+    model_BCSTDSAMTempVar_EXPO<-fit_env(tree,env_data_SAMMAT , df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDSAMTempVar_EXPO)
+    
+    # BSAMTempVar DSAMTempVar EXPO
+    cat("BSAMTempVar DSAMTempVar EXPO: both speciation and extinction vary exponentially with SAM temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(abs(model_BSAMTempVarDCST_EXPO$lamb_par[1]),model_BSAMTempVarDCST_EXPO$lamb_par[2])
+    mu_par<-c(0.01,0)
+    cst.lamb=F; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+    
+    model_BSAMTempVarDSAMTempVar_EXPO<-fit_env(tree,env_data_SAMMAT , df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BSAMTempVarDSAMTempVar_EXPO)
+    
+    #AFR
+    # BAFRTempVar EXPO
+    cat("BAFRTempVar EXPO: speciation varies exponentially with AFR temperature without extinction", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){0}
+    lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1], 0)
+    mu_par<-c()
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+     
+    # here new model, fit_env , two more params for the function, the dataframe and the spline degree of freedom
+    model_BAFRTempVar_EXPO<-fit_env(tree,env_data_AFRMAT, df=80, total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BAFRTempVar_EXPO)
+     
+    # BAFRTempVar DCST EXPO
+    cat("BAFRTempVar DCST EXPO: speciation varies exponentially with AFR temperature and extinction is constant", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]}
+    lamb_par<-c(abs(model_BAFRTempVar_EXPO$lamb_par[1]),model_BAFRTempVar_EXPO$lamb_par[2])
+    mu_par<-c(0.01)
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+    
+    model_BAFRTempVarDCST_EXPO<-fit_env(tree,env_data_AFRMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BAFRTempVarDCST_EXPO)
+     
+    # BCST DAFRTempVar EXPO
+    cat("BCST DAFRTempVar EXPO: constant speciation and extinction varies exponentially with AFR temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    mu_par<-c(0.01,0)
+    cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+     
+    model_BCSTDAFRTempVar_EXPO<-fit_env(tree,env_data_AFRMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDAFRTempVar_EXPO)
+     
+    # BAFRTempVar DAFRTempVar EXPO
+    cat("BAFRTempVar DAFRTempVar EXPO: both speciation and extinction vary exponentially with AFR temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(abs(model_BAFRTempVarDCST_EXPO$lamb_par[1]),model_BAFRTempVarDCST_EXPO$lamb_par[2])
+    mu_par<-c(0.01,0)
+    cst.lamb=F; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+    
+    model_BAFRTempVarDAFRTempVar_EXPO<-fit_env(tree,env_data_AFRMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BAFRTempVarDAFRTempVar_EXPO)
+     
+    #NorthAmerica
+    # BNAMTempVar EXPO
+    cat("BNAMTempVar EXPO: speciation varies exponentially with NAM temperature without extinction", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){0}
+    lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1], 0)
+    mu_par<-c()
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+     
+    # here new model, fit_env , two more params for the function, the dataframe and the spline degree of freedom
+    model_BNAMTempVar_EXPO<-fit_env(tree,env_data_NAMMAT, df=80, total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BNAMTempVar_EXPO)
+     
+    # BNAMTempVar DCST EXPO
+    cat("BNAMTempVar DCST EXPO: speciation varies exponentially with NAM temperature and extinction is constant", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]}
+    lamb_par<-c(abs(model_BNAMTempVar_EXPO$lamb_par[1]),model_BNAMTempVar_EXPO$lamb_par[2])
+    mu_par<-c(0.01)
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+     
+    model_BNAMTempVarDCST_EXPO<-fit_env(tree,env_data_NAMMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BNAMTempVarDCST_EXPO)
+     
+    # BCST DNAMTempVar EXPO
+    cat("BCST DNAMTempVar EXPO: constant speciation and extinction varies exponentially with NAM temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    mu_par<-c(0.01,0)
+    cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+     
+    model_BCSTDNAMTempVar_EXPO<-fit_env(tree,env_data_NAMMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDNAMTempVar_EXPO)
+     
+    # BNAMTempVar DNAMTempVar EXPO
+    cat("BNAMTempVar DNAMTempVar EXPO: both speciation and extinction vary exponentially with NAM temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(abs(model_BNAMTempVarDCST_EXPO$lamb_par[1]),model_BNAMTempVarDCST_EXPO$lamb_par[2])
+    mu_par<-c(0.01,0)
+    cst.lamb=F; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+     
+    model_BNAMTempVarDNAMTempVar_EXPO<-fit_env(tree,env_data_NAMMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BNAMTempVarDNAMTempVar_EXPO)
+     
+    #Eurasia
+    # BEURATempVar EXPO
+    cat("BEURATempVar EXPO: speciation varies exponentially with EURA temperature without extinction", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){0}
+    lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1], 0)
+    mu_par<-c()
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+     
+    # here new model, fit_env , two more params for the function, the dataframe and the spline degree of freedom
+    model_BEURATempVar_EXPO<-fit_env(tree,env_data_EURAMAT, df=80, total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BEURATempVar_EXPO)
+     
+    # BEURATempVar DCST EXPO
+    cat("BEURATempVar DCST EXPO: speciation varies exponentially with EURA temperature and extinction is constant", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]}
+    lamb_par<-c(abs(model_BEURATempVar_EXPO$lamb_par[1]),model_BEURATempVar_EXPO$lamb_par[2])
+    mu_par<-c(0.01)
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+     
+    model_BEURATempVarDCST_EXPO<-fit_env(tree,env_data_EURAMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BEURATempVarDCST_EXPO)
+     
+    # BCST DEURATempVar EXPO
+    cat("BCST DEURATempVar EXPO: constant speciation and extinction varies exponentially with EURA temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    mu_par<-c(0.01,0)
+    cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+     
+    model_BCSTDEURATempVar_EXPO<-fit_env(tree,env_data_EURAMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDEURATempVar_EXPO)
+     
+    # BEURATempVar DEURATempVar EXPO
+    cat("BEURATempVar DEURATempVar EXPO: both speciation and extinction vary exponentially with EURA temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(abs(model_BEURATempVarDCST_EXPO$lamb_par[1]),model_BEURATempVarDCST_EXPO$lamb_par[2])
+    mu_par<-c(0.01,0)
+    cst.lamb=F; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+     
+    model_BEURATempVarDEURATempVar_EXPO<-fit_env(tree,env_data_EURAMAT, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BEURATempVarDEURATempVar_EXPO)
+    
+    #Fragmentation
+
+    cat("Fragmentation-dependent diversification models", "\n")
+    env_data <- read.table("./Environmental data/Fragmentation.txt", h=T)
+    df <- smooth.spline(x= env_data[,1], env_data[,2])$df; print(df)
+
+    # function of x=time, y=parameter, t=temp
+    # the function only needs to be specified, after that the model fit functions take care of optimisation...
+
+    # BFragVar EXPO
+    cat("BFragVar EXPO: speciation varies exponentially with temperature without extinction", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){0}
+    lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1], 0)
+    mu_par<-c()
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+
+    # here new model, fit_env , two more params for the function, the dataframe and the spline degree of freedom
+    model_BFragVar_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BFragVar_EXPO)
+
+    # BFragVar DCST EXPO
+    cat("BFragVar DCST EXPO: speciation varies exponentially with temperature and extinction is constant", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]}
+    lamb_par<-c(abs(model_BFragVar_EXPO$lamb_par[1]),model_BFragVar_EXPO$lamb_par[2])
+    mu_par<-c(0.01)
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+
+    model_BFragVarDCST_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BFragVarDCST_EXPO)
+
+    # BCST DFragVar EXPO
+    cat("BCST DFragVar EXPO: constant speciation and extinction varies exponentially with temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    mu_par<-c(0.01,0)
+    cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+
+    model_BCSTDFragVar_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDFragVar_EXPO)
+
+    # BFragVar DFragVar EXPO
+    cat("BFragVar DFragVar EXPO: both speciation and extinction vary exponentially with temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(abs(model_BFragVarDCST_EXPO$lamb_par[1]),model_BFragVarDCST_EXPO$lamb_par[2])
+    mu_par<-c(0.01,0)
+    cst.lamb=F; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+
+    model_BFragVarDFragVar_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BFragVarDFragVar_EXPO)
+
+
+    #Sealevel
+
+    cat("Sealevel-dependent diversification models", "\n")
+    env_data <- read.table("./Environmental data/SeaLevel.txt", h=T)
+    df <- smooth.spline(x= env_data[,1], env_data[,2])$df; print(df)
+
+    # function of x=time, y=parameter, t=temp
+    # the function only needs to be specified, after that the model fit functions take care of optimisation...
+
+    # BSeaVar EXPO
+    cat("BSeaVar EXPO: speciation varies exponentially with temperature without extinction", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){0}
+    lamb_par<-c(model_BTimeVar_EXPO$lamb_par[1], 0)
+    mu_par<-c()
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=T
+
+    # here new model, fit_env , two more params for the function, the dataframe and the spline degree of freedom
+    model_BSeaVar_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BSeaVar_EXPO)
+
+    # # BSeaVar DCST EXPO
+    cat("BSeaVar DCST EXPO: speciation varies exponentially with temperature and extinction is constant", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]}
+    lamb_par<-c(abs(model_BSeaVar_EXPO$lamb_par[1]),model_BSeaVar_EXPO$lamb_par[2])
+    mu_par<-c(0.01)
+    cst.lamb=F; cst.mu=T; expo.lamb=F; expo.mu=F; fix.mu=F
+
+    model_BSeaVarDCST_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BSeaVarDCST_EXPO)
+
+    # # BCST DSeaVar EXPO
+    cat("BCST DSeaVar EXPO: constant speciation and extinction varies exponentially with temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(model_BCSTDCST$lamb_par[1])
+    mu_par<-c(0.01,0)
+    cst.lamb=T; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+
+    model_BCSTDSeaVar_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BCSTDSeaVar_EXPO)
+
+    # BSeaVar DSeaVar EXPO
+    cat("BSeaVar DSeaVar EXPO: both speciation and extinction vary exponentially with temperature", "\n")
+    f.lamb<-function(t,x,y){y[1]*exp(y[2]*x)}
+    f.mu<-function(t,x,y){y[1]*exp(y[2]*x)}
+    lamb_par<-c(abs(model_BSeaVarDCST_EXPO$lamb_par[1]),model_BSeaVarDCST_EXPO$lamb_par[2])
+    mu_par<-c(0.01,0)
+    cst.lamb=F; cst.mu=F; expo.lamb=F; expo.mu=F; fix.mu=F
+
+    model_BSeaVarDSeaVar_EXPO<-fit_env(tree,env_data, df=80,total.time,f.lamb,f.mu,lamb_par,mu_par,f=sampling.fraction,cst.lamb=cst.lamb,cst.mu=cst.mu,expo.lamb=expo.lamb,expo.mu=expo.mu,fix.mu=fix.mu,cond="crown")
+    print(model_BSeaVarDSeaVar_EXPO)
+
+    
+    ##
+    ## RESULTS
+    ##
+
+    results<-matrix(NA,30,11)
+    colnames(results)<-c("Models","Rate_variation","NP","logL","AICc","delta_AIC","Akaike_w","Lambda","Alpha","Mu","Beta")
+
+    #Models
+    results[,1]<-c("BCST","BCSTDCST",
+                   "BTimeVarEXPO","BTimeVarDCSTEXPO","BCSTDTimeVarEXPO","BTimeVarDTimeVarEXPO",
+                   "BSAMTempVarEXPO","BSAMTempVarDCSTEXPO","BCSTDSAMTempVarEXPO","BSAMTempVarDSAMTempVarEXPO",
+                   "BAFRTempVarEXPO","BAFRTempVarDCSTEXPO","BCSTDAFRTempVarEXPO","BAFRTempVarDAFRTempVarEXPO",
+                   "BNAMTempVarEXPO","BNAMTempVarDCSTEXPO","BCSTDNAMTempVarEXPO","BNAMTempVarDNAMTempVarEXPO",
+                   "BEURATempVarEXPO","BEURATempVarDCSTEXPO","BCSTDEURATempVarEXPO","BEURATempVarDEURATempVarEXPO",
+                   "BFragVarEXPO","BFragVarDCSTEXPO","BCSTDFragVarEXPO","BFragVarDFragVarEXPO",
+                   "BSeaVarEXPO","BSeaVarDCSTEXPO","BCSTDSeaVarEXPO","BSeaVarDSeaVarEXPO")
+                   
+
+    #Rate variation
+    results[,2]<-c("constant","constant",
+                   "exponential","exponential","exponential","exponential",
+                   "exponential","exponential","exponential","exponential",
+                   "exponential","exponential","exponential","exponential",
+                   "exponential","exponential","exponential","exponential",
+                   "exponential","exponential","exponential","exponential",
+                   "exponential","exponential","exponential","exponential",
+                   "exponential","exponential","exponential","exponential")
+    
+    
+    #Number of parameters
+    results[1,3]<-1
+    results[2,3]<-2
+    results[3,3]<-2
+    results[4,3]<-3
+    results[5,3]<-3
+    results[6,3]<-4
+    results[7,3]<-2
+    results[8,3]<-3
+    results[9,3]<-3
+    results[10,3]<-4
+    results[11,3]<-2
+    results[12,3]<-3
+    results[13,3]<-3
+    results[14,3]<-4
+    results[15,3]<-2
+    results[16,3]<-3
+    results[17,3]<-3
+    results[18,3]<-4
+    results[19,3]<-2 
+    results[20,3]<-3 
+    results[21,3]<-3  
+    results[22,3]<-4  
+    results[23,3]<-2  
+    results[24,3]<-3  
+    results[25,3]<-3 
+    results[26,3]<-4  
+    results[27,3]<-2  
+    results[28,3]<-3  
+    results[29,3]<-3 
+    results[30,3]<-4  
+
+        # log-likelihood
+    results[1,4] <- round(model_BCST$LH,3)
+    results[2,4] <- round(model_BCSTDCST$LH,3)
+    results[3,4] <- round(model_BTimeVar_EXPO$LH,3)
+    results[4,4] <- round(model_BTimeVarDCST_EXPO$LH,3)
+    results[5,4] <- round(model_BCSTDTimeVar_EXPO$LH,3)
+    results[6,4] <- round(model_BTimeVarDTimeVar_EXPO$LH,3)
+
+    results[7,4]  <- round(model_BSAMTempVar_EXPO$LH,3)
+    results[8,4]  <- round(model_BSAMTempVarDCST_EXPO$LH,3)
+    results[9,4]  <- round(model_BCSTDSAMTempVar_EXPO$LH,3)
+    results[10,4] <- round(model_BSAMTempVarDSAMTempVar_EXPO$LH,3)
+
+    results[11,4] <- round(model_BAFRTempVar_EXPO$LH,3)
+    results[12,4] <- round(model_BAFRTempVarDCST_EXPO$LH,3)
+    results[13,4] <- round(model_BCSTDAFRTempVar_EXPO$LH,3)
+    results[14,4] <- round(model_BAFRTempVarDAFRTempVar_EXPO$LH,3)
+
+    results[15,4] <- round(model_BNAMTempVar_EXPO$LH,3)
+    results[16,4] <- round(model_BNAMTempVarDCST_EXPO$LH,3)
+    results[17,4] <- round(model_BCSTDNAMTempVar_EXPO$LH,3)
+    results[18,4] <- round(model_BNAMTempVarDNAMTempVar_EXPO$LH,3)
+
+    results[19,4] <- round(model_BEURATempVar_EXPO$LH,3)
+    results[20,4] <- round(model_BEURATempVarDCST_EXPO$LH,3)
+    results[21,4] <- round(model_BCSTDEURATempVar_EXPO$LH,3)
+    results[22,4] <- round(model_BEURATempVarDEURATempVar_EXPO$LH,3)
+
+    results[23,4] <- round(model_BFragVar_EXPO$LH,3)
+    results[24,4] <- round(model_BFragVarDCST_EXPO$LH,3)
+    results[25,4] <- round(model_BCSTDFragVar_EXPO$LH,3)
+    results[26,4] <- round(model_BFragVarDFragVar_EXPO$LH,3)
+
+    results[27,4] <- round(model_BSeaVar_EXPO$LH,3)
+    results[28,4] <- round(model_BSeaVarDCST_EXPO$LH,3)
+    results[29,4] <- round(model_BCSTDSeaVar_EXPO$LH,3)
+    results[30,4] <- round(model_BSeaVarDSeaVar_EXPO$LH,3)
+
+    # AICc
+    results[1,5]  <- round(model_BCST$aicc,3)
+    results[2,5]  <- round(model_BCSTDCST$aicc,3)
+    results[3,5]  <- round(model_BTimeVar_EXPO$aicc,3)
+    results[4,5]  <- round(model_BTimeVarDCST_EXPO$aicc,3)
+    results[5,5]  <- round(model_BCSTDTimeVar_EXPO$aicc,3)
+    results[6,5]  <- round(model_BTimeVarDTimeVar_EXPO$aicc,3)
+
+    results[7,5]  <- round(model_BSAMTempVar_EXPO$aicc,3)
+    results[8,5]  <- round(model_BSAMTempVarDCST_EXPO$aicc,3)
+    results[9,5]  <- round(model_BCSTDSAMTempVar_EXPO$aicc,3)
+    results[10,5] <- round(model_BSAMTempVarDSAMTempVar_EXPO$aicc,3)
+
+    results[11,5] <- round(model_BAFRTempVar_EXPO$aicc,3)
+    results[12,5] <- round(model_BAFRTempVarDCST_EXPO$aicc,3)
+    results[13,5] <- round(model_BCSTDAFRTempVar_EXPO$aicc,3)
+    results[14,5] <- round(model_BAFRTempVarDAFRTempVar_EXPO$aicc,3)
+
+    results[15,5] <- round(model_BNAMTempVar_EXPO$aicc,3)
+    results[16,5] <- round(model_BNAMTempVarDCST_EXPO$aicc,3)
+    results[17,5] <- round(model_BCSTDNAMTempVar_EXPO$aicc,3)
+    results[18,5] <- round(model_BNAMTempVarDNAMTempVar_EXPO$aicc,3)
+
+    results[19,5] <- round(model_BEURATempVar_EXPO$aicc,3)
+    results[20,5] <- round(model_BEURATempVarDCST_EXPO$aicc,3)
+    results[21,5] <- round(model_BCSTDEURATempVar_EXPO$aicc,3)
+    results[22,5] <- round(model_BEURATempVarDEURATempVar_EXPO$aicc,3)
+
+    results[23,5] <- round(model_BFragVar_EXPO$aicc,3)
+    results[24,5] <- round(model_BFragVarDCST_EXPO$aicc,3)
+    results[25,5] <- round(model_BCSTDFragVar_EXPO$aicc,3)
+    results[26,5] <- round(model_BFragVarDFragVar_EXPO$aicc,3)
+
+    results[27,5] <- round(model_BSeaVar_EXPO$aicc,3)
+    results[28,5] <- round(model_BSeaVarDCST_EXPO$aicc,3)
+    results[29,5] <- round(model_BCSTDSeaVar_EXPO$aicc,3)
+    results[30,5] <- round(model_BSeaVarDSeaVar_EXPO$aicc,3)
+
+    # delta AIC
+    all_AICc <- c(results[,5])
+    for (k in 1:30){
+      results[k,6] <- round(as.numeric(all_AICc[k]) - as.numeric(min(all_AICc)),3)
+    }
+
+    # Akaike weights
+    all_delta <- c(results[,6])
+    all_RL <- c()
+    for (j in 1:length(all_delta)){
+      RL = exp(-0.5 * as.numeric(all_delta[j]))
+      all_RL <- c(all_RL, RL)
+    }
+    total_RL <- sum(all_RL)
+    for (k in 1:30){
+      results[k,7] <- round(as.numeric(all_RL[k])/total_RL,3)
+    }
+
+    # Speciation (lambda) parameter
+    results[1,8]  <- round(abs(model_BCST$lamb_par[1]),4)
+    results[2,8]  <- round(abs(model_BCSTDCST$lamb_par[1]),4)
+    results[3,8]  <- round(abs(model_BTimeVar_EXPO$lamb_par[1]),4)
+    results[4,8]  <- round(abs(model_BTimeVarDCST_EXPO$lamb_par[1]),4)
+    results[5,8]  <- round(abs(model_BCSTDTimeVar_EXPO$lamb_par[1]),4)
+    results[6,8]  <- round(abs(model_BTimeVarDTimeVar_EXPO$lamb_par[1]),4)
+
+    results[7,8]  <- round(abs(model_BSAMTempVar_EXPO$lamb_par[1]),4)
+    results[8,8]  <- round(abs(model_BSAMTempVarDCST_EXPO$lamb_par[1]),4)
+    results[9,8]  <- round(abs(model_BCSTDSAMTempVar_EXPO$lamb_par[1]),4)
+    results[10,8] <- round(abs(model_BSAMTempVarDSAMTempVar_EXPO$lamb_par[1]),4)
+
+    results[11,8] <- round(abs(model_BAFRTempVar_EXPO$lamb_par[1]),4)
+    results[12,8] <- round(abs(model_BAFRTempVarDCST_EXPO$lamb_par[1]),4)
+    results[13,8] <- round(abs(model_BCSTDAFRTempVar_EXPO$lamb_par[1]),4)
+    results[14,8] <- round(abs(model_BAFRTempVarDAFRTempVar_EXPO$lamb_par[1]),4)
+
+    results[15,8] <- round(abs(model_BNAMTempVar_EXPO$lamb_par[1]),4)
+    results[16,8] <- round(abs(model_BNAMTempVarDCST_EXPO$lamb_par[1]),4)
+    results[17,8] <- round(abs(model_BCSTDNAMTempVar_EXPO$lamb_par[1]),4)
+    results[18,8] <- round(abs(model_BNAMTempVarDNAMTempVar_EXPO$lamb_par[1]),4)
+
+    results[19,8] <- round(abs(model_BEURATempVar_EXPO$lamb_par[1]),4)
+    results[20,8] <- round(abs(model_BEURATempVarDCST_EXPO$lamb_par[1]),4)
+    results[21,8] <- round(abs(model_BCSTDEURATempVar_EXPO$lamb_par[1]),4)
+    results[22,8] <- round(abs(model_BEURATempVarDEURATempVar_EXPO$lamb_par[1]),4)
+
+    results[23,8] <- round(abs(model_BFragVar_EXPO$lamb_par[1]),4)
+    results[24,8] <- round(abs(model_BFragVarDCST_EXPO$lamb_par[1]),4)
+    results[25,8] <- round(abs(model_BCSTDFragVar_EXPO$lamb_par[1]),4)
+    results[26,8] <- round(abs(model_BFragVarDFragVar_EXPO$lamb_par[1]),4)
+
+    results[27,8] <- round(abs(model_BSeaVar_EXPO$lamb_par[1]),4)
+    results[28,8] <- round(abs(model_BSeaVarDCST_EXPO$lamb_par[1]),4)
+    results[29,8] <- round(abs(model_BCSTDSeaVar_EXPO$lamb_par[1]),4)
+    results[30,8] <- round(abs(model_BSeaVarDSeaVar_EXPO$lamb_par[1]),4)
+
+    # Speciation variation (alpha) parameter (only models with varying lambda)
+    results[3,9]   <- round(model_BTimeVar_EXPO$lamb_par[2],4)
+    results[4,9]   <- round(model_BTimeVarDCST_EXPO$lamb_par[2],4)
+    results[6,9]   <- round(model_BTimeVarDTimeVar_EXPO$lamb_par[2],4)
+
+    results[7,9]   <- round(model_BSAMTempVar_EXPO$lamb_par[2],4)
+    results[8,9]   <- round(model_BSAMTempVarDCST_EXPO$lamb_par[2],4)
+    results[10,9]  <- round(model_BSAMTempVarDSAMTempVar_EXPO$lamb_par[2],4)
+
+    results[11,9]  <- round(model_BAFRTempVar_EXPO$lamb_par[2],4)
+    results[12,9]  <- round(model_BAFRTempVarDCST_EXPO$lamb_par[2],4)
+    results[14,9]  <- round(model_BAFRTempVarDAFRTempVar_EXPO$lamb_par[2],4)
+
+    results[15,9]  <- round(model_BNAMTempVar_EXPO$lamb_par[2],4)
+    results[16,9]  <- round(model_BNAMTempVarDCST_EXPO$lamb_par[2],4)
+    results[18,9]  <- round(model_BNAMTempVarDNAMTempVar_EXPO$lamb_par[2],4)
+
+    results[19,9]  <- round(model_BEURATempVar_EXPO$lamb_par[2],4)
+    results[20,9]  <- round(model_BEURATempVarDCST_EXPO$lamb_par[2],4)
+    results[22,9]  <- round(model_BEURATempVarDEURATempVar_EXPO$lamb_par[2],4)
+
+    results[23,9]  <- round(model_BFragVar_EXPO$lamb_par[2],4)
+    results[24,9]  <- round(model_BFragVarDCST_EXPO$lamb_par[2],4)
+    results[26,9]  <- round(model_BFragVarDFragVar_EXPO$lamb_par[2],4)
+
+    results[27,9]  <- round(model_BSeaVar_EXPO$lamb_par[2],4)
+    results[28,9]  <- round(model_BSeaVarDCST_EXPO$lamb_par[2],4)
+    results[30,9]  <- round(model_BSeaVarDSeaVar_EXPO$lamb_par[2],4)
+
+    # Extinction (mu) parameter (models where mu is estimated)
+    results[2,10]  <- round(abs(model_BCSTDCST$mu_par[1]),4)
+    results[4,10]  <- round(abs(model_BTimeVarDCST_EXPO$mu_par[1]),4)
+    results[5,10]  <- round(abs(model_BCSTDTimeVar_EXPO$mu_par[1]),4)
+    results[6,10]  <- round(abs(model_BTimeVarDTimeVar_EXPO$mu_par[1]),4)
+
+    results[8,10]  <- round(abs(model_BSAMTempVarDCST_EXPO$mu_par[1]),4)
+    results[9,10]  <- round(abs(model_BCSTDSAMTempVar_EXPO$mu_par[1]),4)
+    results[10,10] <- round(abs(model_BSAMTempVarDSAMTempVar_EXPO$mu_par[1]),4)
+
+    results[12,10] <- round(abs(model_BAFRTempVarDCST_EXPO$mu_par[1]),4)
+    results[13,10] <- round(abs(model_BCSTDAFRTempVar_EXPO$mu_par[1]),4)
+    results[14,10] <- round(abs(model_BAFRTempVarDAFRTempVar_EXPO$mu_par[1]),4)
+
+    results[16,10] <- round(abs(model_BNAMTempVarDCST_EXPO$mu_par[1]),4)
+    results[17,10] <- round(abs(model_BCSTDNAMTempVar_EXPO$mu_par[1]),4)
+    results[18,10] <- round(abs(model_BNAMTempVarDNAMTempVar_EXPO$mu_par[1]),4)
+
+    results[20,10] <- round(abs(model_BEURATempVarDCST_EXPO$mu_par[1]),4)
+    results[21,10] <- round(abs(model_BCSTDEURATempVar_EXPO$mu_par[1]),4)
+    results[22,10] <- round(abs(model_BEURATempVarDEURATempVar_EXPO$mu_par[1]),4)
+
+    results[24,10] <- round(abs(model_BFragVarDCST_EXPO$mu_par[1]),4)
+    results[25,10] <- round(abs(model_BCSTDFragVar_EXPO$mu_par[1]),4)
+    results[26,10] <- round(abs(model_BFragVarDFragVar_EXPO$mu_par[1]),4)
+
+    results[28,10] <- round(abs(model_BSeaVarDCST_EXPO$mu_par[1]),4)
+    results[29,10] <- round(abs(model_BCSTDSeaVar_EXPO$mu_par[1]),4)
+    results[30,10] <- round(abs(model_BSeaVarDSeaVar_EXPO$mu_par[1]),4)
+
+    # Extinction variation (beta) parameter (only models with varying mu)
+    results[5,11]  <- round(model_BCSTDTimeVar_EXPO$mu_par[2],4)
+    results[6,11]  <- round(model_BTimeVarDTimeVar_EXPO$mu_par[2],4)
+
+    results[9,11]  <- round(model_BCSTDSAMTempVar_EXPO$mu_par[2],4)
+    results[10,11] <- round(model_BSAMTempVarDSAMTempVar_EXPO$mu_par[2],4)
+
+    results[13,11] <- round(model_BCSTDAFRTempVar_EXPO$mu_par[2],4)
+    results[14,11] <- round(model_BAFRTempVarDAFRTempVar_EXPO$mu_par[2],4)
+
+    results[17,11] <- round(model_BCSTDNAMTempVar_EXPO$mu_par[2],4)
+    results[18,11] <- round(model_BNAMTempVarDNAMTempVar_EXPO$mu_par[2],4)
+
+    results[21,11] <- round(model_BCSTDEURATempVar_EXPO$mu_par[2],4)
+    results[22,11] <- round(model_BEURATempVarDEURATempVar_EXPO$mu_par[2],4)
+
+    results[25,11] <- round(model_BCSTDFragVar_EXPO$mu_par[2],4)
+    results[26,11] <- round(model_BFragVarDFragVar_EXPO$mu_par[2],4)
+
+    results[29,11] <- round(model_BCSTDSeaVar_EXPO$mu_par[2],4)
+    results[30,11] <- round(model_BSeaVarDSeaVar_EXPO$mu_par[2],4)
+
+    print(results)
+
+    all_res[[i]]<-list("Clade_age"=total.time,"Taxon_sampling"=Ntip(tree),"Sampling_fraction"=sampling.fraction,
+                       "BCST"=model_BCST,"BCSTDCST"=model_BCSTDCST,
+                       "BTimeVar_EXPO"=model_BTimeVar_EXPO,"BTimeVarDCST_EXPO"=model_BTimeVarDCST_EXPO,"BCSTDTimeVar_EXPO"=model_BCSTDTimeVar_EXPO,"BTimeVarDTimeVar_EXPO"=model_BTimeVarDTimeVar_EXPO,
+                       "BSAMTempVar_EXPO"=model_BSAMTempVar_EXPO,"BSAMTempVarDCST_EXPO"=model_BSAMTempVarDCST_EXPO,"BCSTDSAMTempVar_EXPO"=model_BCSTDSAMTempVar_EXPO,"BSAMTempVarDSAMTempVar_EXPO"=model_BSAMTempVarDSAMTempVar_EXPO,
+                       "BAFRTempVar_EXPO"=model_BAFRTempVar_EXPO,"BAFRTempVarDCST_EXPO"=model_BAFRTempVarDCST_EXPO,"BCSTDAFRTempVar_EXPO"=model_BCSTDAFRTempVar_EXPO,"BAFRTempVarDAFRTempVar_EXPO"=model_BAFRTempVarDAFRTempVar_EXPO,
+                       "BNAMTempVar_EXPO"=model_BNAMTempVar_EXPO,"BNAMTempVarDCST_EXPO"=model_BNAMTempVarDCST_EXPO,"BCSTDNAMTempVar_EXPO"=model_BCSTDNAMTempVar_EXPO,"BNAMTempVarDNAMTempVar_EXPO"=model_BNAMTempVarDNAMTempVar_EXPO,
+                       "BEURATempVar_EXPO"=model_BEURATempVar_EXPO,"BEURATempVarDCST_EXPO"=model_BEURATempVarDCST_EXPO,"BCSTDEURATempVar_EXPO"=model_BCSTDEURATempVar_EXPO,"BEURATempVarDEURATempVar_EXPO"=model_BEURATempVarDEURATempVar_EXPO,
+                       "BFragVar_EXPO"=model_BFragVar_EXPO,"BFragVarDCST_EXPO"=model_BFragVarDCST_EXPO,"BCSTDFragVar_EXPO"=model_BCSTDFragVar_EXPO,"BFragVarDFragVar_EXPO"=model_BFragVarDFragVar_EXPO,
+                       "BSeaVar_EXPO"=model_BSeaVar_EXPO,"BSeaVarDCST_EXPO"=model_BSeaVarDCST_EXPO,"BCSTDSeaVar_EXPO"=model_BCSTDSeaVar_EXPO,"BSeaVarDSeaVar_EXPO"=model_BSeaVarDSeaVar_EXPO)
+    final[[i]]<-results
+  }
+  output_prefix <- paste0(tre_file_base, "_TimeAFRNAMEURASAMTempFragSea")
+  final_table <-tables.summary(final); print(final_table)
+  output_file_txt <- paste0("Results_", output_prefix, ".txt")
+  write.table(final,file=output_file_txt, quote=FALSE,sep="\t",row.names=FALSE)
+  output_file_data <- paste0("Results_", output_prefix, ".Rdata")
+  save(all_res,file=output_file_data)
+}
+
+# Loop through each .tre file and apply the process_tree_file function
+for (tre_file in tre_files) {
+  process_tree_file(tre_file)
+}
